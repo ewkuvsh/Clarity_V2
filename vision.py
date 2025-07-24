@@ -12,7 +12,7 @@ import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst
 import cv2
-
+import sys
 # Local application-specific imports
 import hailo
 from hailo_apps.hailo_app_python.core.common.buffer_utils import get_caps_from_pad, get_numpy_from_buffer
@@ -38,68 +38,67 @@ class user_app_callback_class(app_callback_class):
 
 # This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
-    # Get the GstBuffer from the probe info
+
     buffer = info.get_buffer()
-    # Check if the buffer is valid
     if buffer is None:
         return Gst.PadProbeReturn.OK
 
-    # Using the user_data to count the number of frames
     user_data.increment()
-    string_to_print = f"Frame count: {user_data.get_count()}\n"
 
     # Get the caps from the pad
     format, width, height = get_caps_from_pad(pad)
-
-    # If the user_data.use_frame is set to True, we can get the video frame from the buffer
-    frame = None
-    if user_data.use_frame and format is not None and width is not None and height is not None:
-        # Get video frame
-        frame = get_numpy_from_buffer(buffer, format, width, height)
 
     # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
 
-    # Parse the detections
-    detection_count = 0
+    detection_results = []
     for detection in detections:
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
         if label == "person":
-            # Get track ID
             track_id = 0
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
                 track_id = track[0].get_id()
-            string_to_print += (f"Detection: ID: {track_id} Label: {label} Confidence: {confidence:.2f}\n")
-            detection_count += 1
-    if user_data.use_frame:
-        # Note: using imshow will not work here, as the callback function is not running in the main thread
-        # Let's print the detection count to the frame
-        cv2.putText(frame, f"Detections: {detection_count}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        # Example of how to use the new_variable and new_function from the user_data
-        # Let's print the new_variable and the result of the new_function to the frame
-        cv2.putText(frame, f"{user_data.new_function()} {user_data.new_variable}", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        # Convert the frame to BGR
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        user_data.set_frame(frame)
+            detection_results.append({
+                "id": track_id,
+                "label": label,
+                "confidence": confidence,
+                "bbox": bbox
+            })
 
-    print(string_to_print)
+    # Store detections in user_data for access in worker_function
+    user_data.latest_detections = detection_results
+
     return Gst.PadProbeReturn.OK
 
+def worker_function(conn):
+    original_argv = sys.argv.copy()
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
+    user_data = user_app_callback_class()
+    user_data.latest_detections = []
+    app = GStreamerDetectionApp(app_callback, user_data)
+
+    sys.argv = original_argv
+    import threading
+    gst_thread = threading.Thread(target=app.run, daemon=True)
+    gst_thread.start()
+
+    import time
+    while True:
+        # Send latest detections through the pipe
+        conn.send(user_data.latest_detections)
+        time.sleep(0.1)  # Adjust as needed
 
 def vision(conn):
-    while True:
-        conn.send("vision is alive")
-
-
+    worker_function(conn)
 
 if __name__ == "__main__":
-    # Create an instance of the user app callback class
-    user_data = user_app_callback_class()
-    app = GStreamerDetectionApp(app_callback, user_data)
-    app.run()
-
-
+    import multiprocessing as mp
+    parent_conn, child_conn = mp.Pipe()
+    p = mp.Process(target=vision, args=(child_conn,))
+    p.start()
+    while True:
+        print(parent_conn.recv())
