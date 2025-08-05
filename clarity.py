@@ -25,11 +25,11 @@ def main():
         target=run_voice_worker,
         args=(voice_child_conn,)
     )
-    voice_proc.start()
+#    voice_proc.start()
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
-    while vision_proc.is_alive() and voice_proc.is_alive():
+    while vision_proc.is_alive() and voice_proc.is_alive() or True:
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
             print(conn.recv())
@@ -45,7 +45,7 @@ def main():
         voice_proc.terminate()
         voice_proc.join()
 
-def run_vision_worker(conn, *args):
+def run_vision_worker(conn):
     from vision import vision
     vision(conn)
 

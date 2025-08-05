@@ -15,7 +15,7 @@ def obtain_processed_data(recognizer, data):
     return False, ""
 
 def voice(conn):
-    model = vosk.Model("/home/evan/clarity/vosk-model-small-en-us-0.15")
+    model = vosk.Model("vosk-model-small-en-us-0.15")
     recognizer = vosk.KaldiRecognizer(model, 44100)  # Changed to 44100
     
     # Set up PyAudio to capture the microphone input at 44.1kHz

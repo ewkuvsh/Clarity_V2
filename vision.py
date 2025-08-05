@@ -75,8 +75,9 @@ def app_callback(pad, info, user_data):
     return Gst.PadProbeReturn.OK
 
 def worker_function(conn):
+
     original_argv = sys.argv.copy()
-    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '5']
     user_data = user_app_callback_class()
     user_data.latest_detections = []
     app = GStreamerDetectionApp(app_callback, user_data)
@@ -95,10 +96,10 @@ def worker_function(conn):
 def vision(conn):
     worker_function(conn)
 
-if __name__ == "__main__":
-    import multiprocessing as mp
-    parent_conn, child_conn = mp.Pipe()
-    p = mp.Process(target=vision, args=(child_conn,))
-    p.start()
-    while True:
-        print(parent_conn.recv())
+#if __name__ == "__main__":
+#    import multiprocessing as mp
+#    parent_conn, child_conn = mp.Pipe()
+#    p = mp.Process(target=vision, args=(child_conn,))
+#    p.start()
+#    while True:
+#        print(parent_conn.recv())
