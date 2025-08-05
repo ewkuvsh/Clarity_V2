@@ -36,8 +36,15 @@ class user_app_callback_class(app_callback_class):
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 
+conn = None  
+
+
+
 # This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
+
+    global conn
+
 
     buffer = info.get_buffer()
     if buffer is None:
@@ -70,11 +77,16 @@ def app_callback(pad, info, user_data):
             })
 
     # Store detections in user_data for access in worker_function
-    user_data.latest_detections = detection_results
+    conn.send(detection_results.label)
 
     return Gst.PadProbeReturn.OK
 
-def worker_function(conn):
+def worker_function(conn_incoming):
+
+    global conn
+
+    conn = conn_incoming
+
 
     original_argv = sys.argv.copy()
     sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '5']
@@ -89,9 +101,7 @@ def worker_function(conn):
 
     import time
     while True:
-        # Send latest detections through the pipe
-        conn.send(user_data.latest_detections)
-        time.sleep(0.1)  # Adjust as needed
+        pass
 
 def vision(conn):
     worker_function(conn)
