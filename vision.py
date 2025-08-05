@@ -39,6 +39,8 @@ class user_app_callback_class(app_callback_class):
 def app_callback(pad, info, user_data):
     buffer = info.get_buffer()
     if buffer is None:
+        # Ensure we clear detections if the buffer is empty
+        user_data.latest_detections = []
         return Gst.PadProbeReturn.OK
 
     user_data.increment()
@@ -63,7 +65,7 @@ def app_callback(pad, info, user_data):
                 "bbox": bbox
             })
 
-    # Just store the latest detections
+    # Always update, even if empty
     user_data.latest_detections = detection_results
 
     return Gst.PadProbeReturn.OK
