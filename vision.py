@@ -36,26 +36,13 @@ class user_app_callback_class(app_callback_class):
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 
-conn = None  
-
-
-
-# This is the callback function that will be called when data is available from the pipeline
 def app_callback(pad, info, user_data):
-
-    global conn
-
-
     buffer = info.get_buffer()
     if buffer is None:
         return Gst.PadProbeReturn.OK
 
     user_data.increment()
-
-    # Get the caps from the pad
     format, width, height = get_caps_from_pad(pad)
-
-    # Get the detections from the buffer
     roi = hailo.get_roi_from_buffer(buffer)
     detections = roi.get_objects_typed(hailo.HAILO_DETECTION)
 
@@ -76,32 +63,37 @@ def app_callback(pad, info, user_data):
                 "bbox": bbox
             })
 
-    # Store detections in user_data for access in worker_function
-    conn.send(detection_results.label)
+    # Just store the latest detections
+    user_data.latest_detections = detection_results
 
     return Gst.PadProbeReturn.OK
 
 def worker_function(conn_incoming):
-
     global conn
-
     conn = conn_incoming
 
-
     original_argv = sys.argv.copy()
-    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '5']
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
     user_data = user_app_callback_class()
     user_data.latest_detections = []
     app = GStreamerDetectionApp(app_callback, user_data)
-
     sys.argv = original_argv
+
     import threading
     gst_thread = threading.Thread(target=app.run, daemon=True)
     gst_thread.start()
 
     import time
+    last_sent = None
     while True:
-        pass
+        # Only send if new data is available
+        if user_data.latest_detections != last_sent:
+            try:
+                conn.send(user_data.latest_detections)
+                last_sent = list(user_data.latest_detections)  # Make a copy to compare
+            except (BrokenPipeError, IOError):
+                break
+        time.sleep(0.01)  # Small sleep to avoid busy-waiting
 
 def vision(conn):
     worker_function(conn)
