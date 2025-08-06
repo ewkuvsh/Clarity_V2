@@ -18,14 +18,14 @@ def main():
         target=run_vision_worker,
         args=(vision_child_conn,)
     )
-    vision_proc.start()
+#    vision_proc.start()
 
     # Start voice multiprocessing worker
     voice_proc = mp.Process(
         target=run_voice_worker,
         args=(voice_child_conn,)
     )
-#    voice_proc.start()
+    voice_proc.start()
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
