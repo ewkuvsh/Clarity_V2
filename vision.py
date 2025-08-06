@@ -75,7 +75,7 @@ def worker_function(conn_incoming):
     conn = conn_incoming
 
     original_argv = sys.argv.copy()
-    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '10']
     user_data = user_app_callback_class()
     user_data.latest_detections = []
     app = GStreamerDetectionApp(app_callback, user_data)

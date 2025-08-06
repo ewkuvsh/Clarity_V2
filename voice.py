@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Timer-based VAD - records when you start speaking, adds 1s chunks while speaking continues
+Configured for ReSpeaker Lite USB device
 """
 import pyaudio
 import numpy as np
@@ -32,14 +33,14 @@ class SimpleVAD:
         return energy > dynamic_threshold
 
 class TimerBasedVADProcessor:
-    def __init__(self, model_size="base"):
-        self.model_size = model_size
+    def __init__(self):
+        self.model_size = "tiny"
         self.model = None
         self.sample_rate = 16000
         
         # VAD settings
         self.non_speech_threshold = 0.005
-        self.speech_timeout = 2.0  # Stop recording after 2s of no speech
+        self.speech_timeout = 1.0  # Stop recording after 2s of no speech
         self.max_recording_duration = 20.0  # Max 20s total recording
         
         # Timer-based recording
@@ -58,13 +59,42 @@ class TimerBasedVADProcessor:
         self.frames_per_chunk = int(self.sample_rate * self.chunk_duration)
         self.current_chunk_buffer = []
         
+    def find_respeaker_device(self):
+        """Find ReSpeaker Lite device index"""
+        p = pyaudio.PyAudio()
+        respeaker_index = None
+        
+        for i in range(p.get_device_count()):
+            info = p.get_device_info_by_index(i)
+            # Look for ReSpeaker Lite in the device name
+            if info['maxInputChannels'] > 0:
+                name = info['name'].lower()
+                if 'respeaker' in name or ('usb audio' in name and 'lite' in str(info)):
+                    respeaker_index = i
+                    break
+        
+        # If not found by name, try to match by known characteristics
+        if respeaker_index is None:
+            for i in range(p.get_device_count()):
+                info = p.get_device_info_by_index(i)
+                if (info['maxInputChannels'] > 0 and 
+                    'USB Audio' in info['name'] and
+                    info['hostApi'] == 0):  # ALSA
+                    respeaker_index = i
+                    break
+        
+        p.terminate()
+        
+        if respeaker_index is None:
+            # Try to use index 2 as fallback (based on your card 2 info)
+            return 2
+            
+        return respeaker_index
+        
     def load_model(self):
         """Load faster-whisper model"""
         try:
             from faster_whisper import WhisperModel
-            
-            print(f"Loading faster-whisper {self.model_size}...")
-            start_time = time.time()
             
             self.model = WhisperModel(
                 self.model_size,
@@ -74,11 +104,9 @@ class TimerBasedVADProcessor:
                 num_workers=1,
             )
             
-            print(f"✓ Model loaded in {time.time() - start_time:.1f}s")
             return True
             
         except Exception as e:
-            print(f"✗ Error loading model: {e}")
             return False
     
     def process_one_second_chunk(self, chunk_data):
@@ -94,11 +122,9 @@ class TimerBasedVADProcessor:
                 self.recording = True
                 self.recording_start_time = current_time
                 self.audio_chunks = []
-                print("🔴 Started recording...")
             
             # Add this chunk to recording
             self.audio_chunks.append(chunk_data)
-            print(f"📝 Added 1s chunk (total: {len(self.audio_chunks)}s)")
             
             return "recording"
         
@@ -114,16 +140,12 @@ class TimerBasedVADProcessor:
                 # Stop recording and process
                 self.recording = False
                 if len(self.audio_chunks) > 0:
-                    print(f"🛑 Stopped recording ({len(self.audio_chunks)}s total)")
                     self._queue_for_transcription()
-                else:
-                    print("🛑 Stopped recording (no audio collected)")
-                
+                print("stopped")
                 return "stopped"
             else:
                 # Still in timeout period, add silent chunk
                 self.audio_chunks.append(chunk_data)
-                print(f"🔇 Added silent chunk (timeout in {self.speech_timeout - time_since_speech:.1f}s)")
                 return "recording_silent"
         
         return "listening"
@@ -135,9 +157,6 @@ class TimerBasedVADProcessor:
             
         # Concatenate all chunks
         full_audio = np.concatenate(self.audio_chunks)
-        duration = len(full_audio) / self.sample_rate
-        
-        print(f"📤 Queuing {duration:.1f}s for transcription")
         
         try:
             self.audio_queue.put_nowait(full_audio)
@@ -158,10 +177,7 @@ class TimerBasedVADProcessor:
             duration = len(audio_data) / self.sample_rate
             if duration < 0.5:
                 return None
-                
-            print(f"🔄 Transcribing {duration:.1f}s...")
-            process_start = time.time()
-            
+            print("processing")
             segments, info = self.model.transcribe(
                 audio_data,
                 language="en",
@@ -186,18 +202,18 @@ class TimerBasedVADProcessor:
                     full_text = full_text[:-1]
                 if full_text:
                     full_text = full_text[0].upper() + full_text[1:]
-                
-                process_time = (time.time() - process_start) * 1000
-                return full_text, process_time, duration
+                print(full_text)
+                return full_text
                 
         except Exception as e:
-            print(f"Transcription error: {e}")
+            pass
         
         return None
     
     def audio_capture_thread(self):
         """Audio capture with 1-second chunk processing"""
-        device_index = 0  # ReSpeaker Lite
+        # Find ReSpeaker Lite device
+        device_index = self.find_respeaker_device()
         frames_per_buffer = 1600  # 0.1 seconds
         
         p = pyaudio.PyAudio()
@@ -213,10 +229,6 @@ class TimerBasedVADProcessor:
             )
             
             stream.start_stream()
-            print("🎤 Timer-based VAD capture started")
-            print(f"⏱️  Checks every 1 second, stops after {self.speech_timeout}s silence")
-            
-            last_status_time = time.time()
             
             while self.running:
                 try:
@@ -236,22 +248,14 @@ class TimerBasedVADProcessor:
                         self.current_chunk_buffer = self.current_chunk_buffer[self.frames_per_chunk:]
                         
                         # Process the 1-second chunk
-                        status = self.process_one_second_chunk(chunk_data)
-                        
-                        # Status updates every 5 seconds
-                        current_time = time.time()
-                        if current_time - last_status_time > 5.0:
-                            if status == "listening":
-                                energy = np.sqrt(np.mean(chunk_data**2))
-                                threshold = max(self.non_speech_threshold, self.vad.background_energy * 2.5)
-                                print(f"👂 Listening... (energy: {energy:.4f}, threshold: {threshold:.4f})")
-                            
-                            last_status_time = current_time
+                        self.process_one_second_chunk(chunk_data)
                 
                 except Exception as e:
-                    print(f"Audio capture error: {e}")
                     time.sleep(0.1)
                     
+        except Exception as e:
+            pass
+            
         finally:
             if 'stream' in locals():
                 stream.stop_stream()
@@ -268,34 +272,18 @@ class TimerBasedVADProcessor:
                 # Transcribe
                 result = self.transcribe_audio_segment(audio_data)
                 
-                if result:
-                    text, process_time, duration = result
-                    print(f"🎯 RESULT: '{text}'")
-                    print(f"   └─ {duration:.1f}s audio, {process_time:.0f}ms processing")
-                    
-                    if conn:
-                        conn.send(text)
-                else:
-                    print("❌ No transcription result")
+                if result and conn:
+                    conn.send(result)
                     
             except queue.Empty:
                 continue
             except Exception as e:
-                print(f"Transcription thread error: {e}")
+                pass
     
     def process_audio(self, conn):
         """Main processing entry point"""
         if not self.load_model():
             return
-            
-        print("🧠 Timer-based VAD processor")
-        print(f"⚙️  Settings:")
-        print(f"   • 1-second chunks")
-        print(f"   • Stop after {self.speech_timeout}s silence")
-        print(f"   • Max recording: {self.max_recording_duration}s")
-        print(f"   • VAD threshold: {self.non_speech_threshold}")
-        print("💡 Speak naturally - records complete thoughts")
-        print("-" * 60)
         
         self.running = True
         
@@ -310,24 +298,17 @@ class TimerBasedVADProcessor:
             while self.running:
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("\n🛑 Stopping...")
+            pass
         finally:
             self.running = False
 
 def voice(conn):
-    processor = TimerBasedVADProcessor("base")
+    processor = TimerBasedVADProcessor()
     processor.process_audio(conn)
 
 def worker_function(conn):
     voice(conn)
 
 if __name__ == "__main__":
-    import sys
-    
-    model_size = "base"
-    if len(sys.argv) > 1:
-        model_size = sys.argv[1]
-    
-    print("Timer-based VAD Processor")
-    processor = TimerBasedVADProcessor(model_size)
+    processor = TimerBasedVADProcessor()
     processor.process_audio(None)

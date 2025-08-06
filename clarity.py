@@ -18,7 +18,7 @@ def main():
         target=run_vision_worker,
         args=(vision_child_conn,)
     )
-#    vision_proc.start()
+    vision_proc.start()
 
     # Start voice multiprocessing worker
     voice_proc = mp.Process(
