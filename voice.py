@@ -124,6 +124,7 @@ class TimerBasedVADProcessor:
                 self.audio_chunks = []
             
             # Add this chunk to recording
+            print("added talking chunk")
             self.audio_chunks.append(chunk_data)
             
             return "recording"
@@ -145,6 +146,7 @@ class TimerBasedVADProcessor:
                 return "stopped"
             else:
                 # Still in timeout period, add silent chunk
+                print("adding silent chunk")
                 self.audio_chunks.append(chunk_data)
                 return "recording_silent"
         

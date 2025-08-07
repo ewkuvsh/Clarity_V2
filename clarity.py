@@ -5,7 +5,7 @@ Main program file
 
 import multiprocessing as mp
 from multiprocessing.connection import wait
-
+from scrounch_intelligence import handle_input
 def main():
     # Create pipe for vision worker
     vision_parent_conn, vision_child_conn = mp.Pipe()
@@ -29,10 +29,15 @@ def main():
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
-    while vision_proc.is_alive() and voice_proc.is_alive() or True:
+    while vision_proc.is_alive() and voice_proc.is_alive():
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
-            print(conn.recv())
+            data = conn.recv()
+            print(data)
+#            if conn == voice_parent_conn:
+#                print(handle_input(data))
+
+
 
 
 
@@ -44,6 +49,7 @@ def main():
     if voice_proc and voice_proc.is_alive():
         voice_proc.terminate()
         voice_proc.join()
+        print("something died :(")
 
 def run_vision_worker(conn):
     from vision import vision
