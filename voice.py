@@ -30,6 +30,7 @@ class SimpleVAD:
         
         # Adaptive threshold
         dynamic_threshold = max(self.threshold, self.background_energy * 2.5)
+        print("Energy detected is ", energy, " the background energy threshold is ", background_energy)
         return energy > dynamic_threshold
 
 class TimerBasedVADProcessor:
@@ -208,6 +209,7 @@ class TimerBasedVADProcessor:
                 return full_text
                 
         except Exception as e:
+            print("transcriptoin exception")
             pass
         
         return None
@@ -253,9 +255,11 @@ class TimerBasedVADProcessor:
                         self.process_one_second_chunk(chunk_data)
                 
                 except Exception as e:
+                    print("audio capture thread while loop exception")
                     time.sleep(0.1)
                     
         except Exception as e:
+            print("audio capture thread exception")
             pass
             
         finally:
