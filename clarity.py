@@ -56,7 +56,8 @@ def main():
     while vision_proc.is_alive() and voice_proc.is_alive() or True:
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
-
+            if conn == vision_parent_conn:
+                handle_vision_detection(conn,x_servo, y_servo)
 
             print(conn.recv())
 
@@ -87,7 +88,7 @@ def handle_vision_detection(conn, x_servo, y_servo):
     while True:
         detections = conn.recv()
 
-        bbox = detections[1].get_bbox()
+        bbox = detections[0].get_bbox()
         if bbox is not None:
             bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
             bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
