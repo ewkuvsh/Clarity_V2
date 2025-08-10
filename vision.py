@@ -75,6 +75,7 @@ def app_callback(pad, info, user_data):
                 "confidence": confidence,
                 "bbox": bbox
             })
+            handle_vision_detection(detection_results, user_data.x_servo, user_data.y_servo)
 
     # Always update, even if empty
     user_data.latest_detections = detection_results
@@ -92,12 +93,12 @@ def worker_function(conn_incoming):
     pca = PCA9685(i2c)
     pca.frequency = 50  # Set PWM frequency to 50Hz for servos
 
-    y_servo = servo.Servo(pca.channels[14])
-    x_servo = servo.Servo(pca.channels[15])
+    user_data.y_servo = servo.Servo(pca.channels[14])
+    user_data.x_servo = servo.Servo(pca.channels[15])
 
     # move both servos to center
-    x_servo.angle = SERVO_X_NEUTRAL
-    y_servo.angle = SERVO_Y_NEUTRAL
+    user_data.x_servo.angle = SERVO_X_NEUTRAL
+    user_data.y_servo.angle = SERVO_Y_NEUTRAL
 
 
 
@@ -116,10 +117,8 @@ def worker_function(conn_incoming):
     last_sent = None
     while True:
         # Only send if new data is available
-#        handle_vision_detection(user_data.latest_detections, x_servo, y_servo)
 
         if user_data.latest_detections != last_sent:
-            handle_vision_detection(user_data.latest_detections, x_servo, y_servo)
             try:
                 conn.send(user_data.latest_detections)
                 last_sent = list(user_data.latest_detections)  # Make a copy to compare
