@@ -5,8 +5,27 @@ Main program file
 
 import multiprocessing as mp
 from multiprocessing.connection import wait
-from scrounch_intelligence import handle_input
+import board
+import busio
+from adafruit_pca9685 import PCA9685
+from adafruit_motor import servo
+
 def main():
+
+    #init servos
+    i2c = busio.I2C(board.SCL, board.SDA)
+
+    pca = PCA9685(i2c)
+    pca.frequency = 50  # Set PWM frequency to 50Hz for servos
+
+    y_servo = servo.Servo(pca.channels[14])
+    x_servo = servo.Servo(pca.channels[15])
+
+    # move both servos to center
+    x_servo.angle = SERVO_X_NEUTRAL
+    y_servo.angle = SERVO_Y_NEUTRAL
+
+
     # Create pipe for vision worker
     vision_parent_conn, vision_child_conn = mp.Pipe()
 
@@ -29,15 +48,10 @@ def main():
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
-    while vision_proc.is_alive() and voice_proc.is_alive():
+    while vision_proc.is_alive() and voice_proc.is_alive() or True:
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
-            data = conn.recv()
-            print(data)
-#            if conn == voice_parent_conn:
-#                print(handle_input(data))
-
-
+            print(conn.recv())
 
 
 
@@ -49,7 +63,6 @@ def main():
     if voice_proc and voice_proc.is_alive():
         voice_proc.terminate()
         voice_proc.join()
-        print("something died :(")
 
 def run_vision_worker(conn):
     from vision import vision
