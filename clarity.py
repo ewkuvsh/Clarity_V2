@@ -11,6 +11,10 @@ from adafruit_pca9685 import PCA9685
 from adafruit_motor import servo
 import hailo
 
+
+SERVO_X_NEUTRAL = 75
+SERVO_Y_NEUTRAL = 90
+
 def main():
 
     #init servos
