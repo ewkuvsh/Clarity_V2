@@ -102,7 +102,7 @@ def worker_function(conn_incoming):
 
 
     original_argv = sys.argv.copy()
-    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '10']
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
     user_data = user_app_callback_class()
     user_data.latest_detections = []
     app = GStreamerDetectionApp(app_callback, user_data)
@@ -116,9 +116,10 @@ def worker_function(conn_incoming):
     last_sent = None
     while True:
         # Only send if new data is available
-        handle_vision_detection(user_data.latest_detections, x_servo, y_servo)
+#        handle_vision_detection(user_data.latest_detections, x_servo, y_servo)
 
         if user_data.latest_detections != last_sent:
+            handle_vision_detection(user_data.latest_detections, x_servo, y_servo)
             try:
                 conn.send(user_data.latest_detections)
                 last_sent = list(user_data.latest_detections)  # Make a copy to compare
@@ -145,9 +146,9 @@ def handle_vision_detection(detections, x_servo, y_servo):
             bbox_center_x = (bbox.xmin() + bbox.xmax()) / 2.0
             bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0 
 
-            if bbox_center_x > 0.6:
+            if bbox_center_x > 0.53:
                 x_servo.angle = x_servo.angle - 5
-            if bbox_center_x < 0.4:
+            if bbox_center_x < 0.47:
                 x_servo.angle = x_servo.angle + 5
 
             print("x: ", bbox_center_x, "y: ", bbox_center_y)
