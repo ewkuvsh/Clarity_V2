@@ -12,23 +12,9 @@ from adafruit_motor import servo
 import hailo
 
 
-SERVO_X_NEUTRAL = 75
-SERVO_Y_NEUTRAL = 90
 
 def main():
 
-    #init servos
-    i2c = busio.I2C(board.SCL, board.SDA)
-
-    pca = PCA9685(i2c)
-    pca.frequency = 50  # Set PWM frequency to 50Hz for servos
-
-    y_servo = servo.Servo(pca.channels[14])
-    x_servo = servo.Servo(pca.channels[15])
-
-    # move both servos to center
-    x_servo.angle = SERVO_X_NEUTRAL
-    y_servo.angle = SERVO_Y_NEUTRAL
 
 
     # Create pipe for vision worker
@@ -56,9 +42,6 @@ def main():
     while vision_proc.is_alive() and voice_proc.is_alive() or True:
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
-            if conn == vision_parent_conn:
-                handle_vision_detection(conn,x_servo, y_servo)
-
             print(conn.recv())
 
 
@@ -81,31 +64,6 @@ def run_voice_worker(conn):
     voice(conn)
 
 
-def handle_vision_detection(conn, x_servo, y_servo):
-
-    detections = conn.recv()
-    max_confidence = 0
-    current_focus = None
-
-    for detection in detections:
-        if detection['confidence'] >= max_confidence:
-            current_focus = detection 
-        
-    if current_focus != None:
-        bbox = current_focus['bbox']
-        if bbox is not None:
-            bbox_center_x = (bbox.xmin() + bbox.xmax()) / 2.0
-            bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0 
-
-            if bbox_center_x > 0.6:
-                x_servo.angle = x_servo.angle + 5
-            if bbox_center_x < 0.4:
-                x_servo.angle = x_servo.angle - 5
-
-            print("x: ", bbox_center_x, "y: ", bbox_center_y)
-
-
-            
 
             
 

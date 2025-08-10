@@ -36,6 +36,12 @@ class user_app_callback_class(app_callback_class):
 # User-defined callback function
 # -----------------------------------------------------------------------------------------------
 
+
+SERVO_X_NEUTRAL = 75
+SERVO_Y_NEUTRAL = 90
+
+
+
 def app_callback(pad, info, user_data):
     buffer = info.get_buffer()
     if buffer is None:
@@ -73,6 +79,22 @@ def app_callback(pad, info, user_data):
 def worker_function(conn_incoming):
     global conn
     conn = conn_incoming
+    
+    
+    #init servos
+    i2c = busio.I2C(board.SCL, board.SDA)
+
+    pca = PCA9685(i2c)
+    pca.frequency = 50  # Set PWM frequency to 50Hz for servos
+
+    y_servo = servo.Servo(pca.channels[14])
+    x_servo = servo.Servo(pca.channels[15])
+
+    # move both servos to center
+    x_servo.angle = SERVO_X_NEUTRAL
+    y_servo.angle = SERVO_Y_NEUTRAL
+
+
 
     original_argv = sys.argv.copy()
     sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '10']
@@ -89,6 +111,8 @@ def worker_function(conn_incoming):
     last_sent = None
     while True:
         # Only send if new data is available
+        handle_vision_detection(x_servo, y_servo)
+
         if user_data.latest_detections != last_sent:
             try:
                 conn.send(user_data.latest_detections)
@@ -100,6 +124,32 @@ def worker_function(conn_incoming):
 def vision(conn):
     worker_function(conn)
 
+
+def handle_vision_detection(x_servo, y_servo):
+
+    detections = conn.recv()
+    max_confidence = 0
+    current_focus = None
+
+    for detection in detections:
+        if detection['confidence'] >= max_confidence:
+            current_focus = detection 
+        
+    if current_focus != None:
+        bbox = current_focus['bbox']
+        if bbox is not None:
+            bbox_center_x = (bbox.xmin() + bbox.xmax()) / 2.0
+            bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0 
+
+            if bbox_center_x > 0.6:
+                x_servo.angle = x_servo.angle - 5
+            if bbox_center_x < 0.4:
+                x_servo.angle = x_servo.angle + 5
+
+            print("x: ", bbox_center_x, "y: ", bbox_center_y)
+
+
+            
 #if __name__ == "__main__":
 #    import multiprocessing as mp
 #    parent_conn, child_conn = mp.Pipe()
