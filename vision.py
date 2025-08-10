@@ -93,6 +93,12 @@ def worker_function(conn_incoming):
     pca = PCA9685(i2c)
     pca.frequency = 50  # Set PWM frequency to 50Hz for servos
 
+
+
+
+    original_argv = sys.argv.copy()
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
+    user_data = user_app_callback_class()
     user_data.y_servo = servo.Servo(pca.channels[14])
     user_data.x_servo = servo.Servo(pca.channels[15])
 
@@ -100,11 +106,6 @@ def worker_function(conn_incoming):
     user_data.x_servo.angle = SERVO_X_NEUTRAL
     user_data.y_servo.angle = SERVO_Y_NEUTRAL
 
-
-
-    original_argv = sys.argv.copy()
-    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
-    user_data = user_app_callback_class()
     user_data.latest_detections = []
     app = GStreamerDetectionApp(app_callback, user_data)
     sys.argv = original_argv
