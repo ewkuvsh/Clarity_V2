@@ -9,6 +9,7 @@ import board
 import busio
 from adafruit_pca9685 import PCA9685
 from adafruit_motor import servo
+import hailo
 
 def main():
 
@@ -51,6 +52,8 @@ def main():
     while vision_proc.is_alive() and voice_proc.is_alive() or True:
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
+
+
             print(conn.recv())
 
 
@@ -71,6 +74,27 @@ def run_vision_worker(conn):
 def run_voice_worker(conn):
     from voice import voice
     voice(conn)
+
+
+def handle_vision_detection(conn, x_servo, y_servo):
+    """
+    Handle vision detection and move servos accordingly.
+    """
+    while True:
+        detections = conn.recv()
+
+        bbox = detections[1].get_bbox()
+        if bbox is not None:
+            bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
+            bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
+
+            print("x: ", bbox_center_x, "y: ", bbox_center_y)
+
+
+            
+
+            
+
 
 if __name__ == "__main__":
     main()
