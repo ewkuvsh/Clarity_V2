@@ -125,7 +125,7 @@ def worker_function(conn_incoming):
                 last_sent = list(user_data.latest_detections)  # Make a copy to compare
             except (BrokenPipeError, IOError):
                 break
-        time.sleep(0.01)  # Small sleep to avoid busy-waiting
+        time.sleep(0.001)  # Small sleep to avoid busy-waiting
 
 def vision(conn):
     worker_function(conn)
