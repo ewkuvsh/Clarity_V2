@@ -49,7 +49,7 @@ def main():
         target=run_voice_worker,
         args=(voice_child_conn,)
     )
-    voice_proc.start()
+#    voice_proc.start()
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
@@ -88,14 +88,14 @@ def handle_vision_detection(conn, x_servo, y_servo):
     current_focus = None
 
     for detection in detections:
-        if detection.confidence >= max_confidence:
+        if detection['confidence'] >= max_confidence:
             current_focus = detection 
         
     if current_focus != None:
-        bbox = current_focus.get_bbox()
+        bbox = current_focus['bbox']
         if bbox is not None:
-            bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
-            bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
+            bbox_center_x = (bbox.xmin() + bbox.xmax()) / 2.0
+            bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0
 
             print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
