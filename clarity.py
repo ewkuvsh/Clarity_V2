@@ -82,18 +82,22 @@ def run_voice_worker(conn):
 
 
 def handle_vision_detection(conn, x_servo, y_servo):
-    """
-    Handle vision detection and move servos accordingly.
-    """
-    while True:
-        detections = conn.recv()
 
-        bbox = detections[0].get_bbox()
-        if bbox is not None:
-            bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
-            bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
+    detections = conn.recv()
+    max_confidence = 0
+    current_focus = None
 
-            print("x: ", bbox_center_x, "y: ", bbox_center_y)
+    for detection in detections:
+        if detection.confidence >= max_confidence:
+            current_focus = detection 
+        
+ 
+    bbox = current_focus.get_bbox()
+    if bbox is not None:
+        bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
+        bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
+
+        print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
 
             
