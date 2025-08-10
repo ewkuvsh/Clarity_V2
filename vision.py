@@ -130,9 +130,8 @@ def vision(conn):
     worker_function(conn)
 
 
-def handle_vision_detection(x_servo, y_servo):
+def handle_vision_detection(detections, x_servo, y_servo):
 
-    detections = conn.recv()
     max_confidence = 0
     current_focus = None
 
