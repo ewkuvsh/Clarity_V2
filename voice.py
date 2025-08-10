@@ -9,7 +9,7 @@ import time
 import queue
 import threading
 from collections import deque
-
+import subprocess
 class SimpleVAD:
     """Simple Voice Activity Detection"""
     def __init__(self, threshold=0.005, window_size=10):
@@ -30,7 +30,7 @@ class SimpleVAD:
         
         # Adaptive threshold
         dynamic_threshold = max(self.threshold, self.background_energy * 2.5)
-        print("Energy detected is ", energy, " the background energy threshold is ", background_energy)
+        print("Energy detected is ", energy, " the background energy threshold is ", dynamic_threshold)
         return energy > dynamic_threshold
 
 class TimerBasedVADProcessor:
@@ -205,11 +205,12 @@ class TimerBasedVADProcessor:
                     full_text = full_text[:-1]
                 if full_text:
                     full_text = full_text[0].upper() + full_text[1:]
+                subprocess.run(f'espeak "{full_text}" --stdout | aplay -D softvol', shell=True)
                 print(full_text)
                 return full_text
                 
         except Exception as e:
-            print("transcriptoin exception")
+            print("transcriptoin exception ",e)
             pass
         
         return None
