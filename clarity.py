@@ -91,13 +91,13 @@ def handle_vision_detection(conn, x_servo, y_servo):
         if detection.confidence >= max_confidence:
             current_focus = detection 
         
- 
-    bbox = current_focus.get_bbox()
-    if bbox is not None:
-        bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
-        bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
+    if current_focus != None:
+        bbox = current_focus.get_bbox()
+        if bbox is not None:
+            bbox_center_x = (bbox.xmin + bbox.xmax) / 2.0
+            bbox_center_y = (bbox.ymin + bbox.ymax) / 2.0
 
-        print("x: ", bbox_center_x, "y: ", bbox_center_y)
+            print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
 
             
