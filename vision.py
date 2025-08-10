@@ -116,7 +116,7 @@ def worker_function(conn_incoming):
     last_sent = None
     while True:
         # Only send if new data is available
-        handle_vision_detection(x_servo, y_servo)
+        handle_vision_detection(user_data.latest_detections, x_servo, y_servo)
 
         if user_data.latest_detections != last_sent:
             try:
