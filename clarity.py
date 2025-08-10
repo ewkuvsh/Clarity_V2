@@ -95,7 +95,12 @@ def handle_vision_detection(conn, x_servo, y_servo):
         bbox = current_focus['bbox']
         if bbox is not None:
             bbox_center_x = (bbox.xmin() + bbox.xmax()) / 2.0
-            bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0
+            bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0 
+
+            if bbox_center_x > 0.6:
+                x_servo.angle = x_servo.angle + 5
+            if bbox_center_x < 0.4:
+                x_servo.angle = x_servo.angle - 5
 
             print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
