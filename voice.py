@@ -5,7 +5,7 @@ import vosk
 import sys
 
 def find_respeaker_device():
-    """Find ReSpeaker Lite device index"""
+    """Finds the respeaker"""
     p = pyaudio.PyAudio()
     respeaker_index = None
     
@@ -21,16 +21,13 @@ def find_respeaker_device():
     
     p.terminate()
     
-    # Force use of device 2 since you mentioned it's card 2
     if respeaker_index is None:
-        print("No ReSpeaker found, using device 2 as fallback", flush=True)
-        return 2
+        return 0 
     
     print(f"Using device {respeaker_index}", flush=True)
     return respeaker_index
 
 def process_audio(conn=None):
-    """Main processing entry point - sends results through pipe or prints"""
     try:
         model = vosk.Model("/home/evan/Clarity_V2/vosk-model-small-en-us-0.15")
         print("Model loaded", flush=True)
@@ -41,7 +38,6 @@ def process_audio(conn=None):
     recognizer = vosk.KaldiRecognizer(model, 16000)
     # Enable more alternatives for better accuracy
     recognizer.SetMaxAlternatives(3)
-    recognizer.SetWords(True)
 
     device_index = find_respeaker_device()
     print(f"Device: {device_index}", flush=True)
@@ -54,7 +50,7 @@ def process_audio(conn=None):
             rate=16000,
             input=True,
             input_device_index=device_index,
-            frames_per_buffer=2048,  # Larger buffer for better accuracy
+            frames_per_buffer=2048, 
         )
         stream.start_stream()
         print("Listening...", flush=True)
@@ -62,35 +58,14 @@ def process_audio(conn=None):
         while True:
             data = stream.read(2048, exception_on_overflow=False)
             if recognizer.AcceptWaveform(data):
-                # Final result with alternatives
                 result = json.loads(recognizer.Result())
-                
-                # Check for text in main result or first alternative
                 text = result.get('text', '').strip()
-                if not text and result.get('alternatives'):
-                    # Sometimes the main text is empty but alternatives have text
-                    first_alt = result['alternatives'][0]
-                    text = first_alt.get('text', '').strip()
-                
-                if text:
-                    response = {
-                        'type': 'final',
-                        'text': text,
-                        'alternatives': result.get('alternatives', [])
-                    }
-                    if conn:
-                        conn.send(text)
-#                    print(f"Final: {text}", flush=True)
-#            else:
-                # Partial result
-#                partial = json.loads(recognizer.PartialResult())
-#                partial_text = partial.get('partial', '').strip()
-#                if partial_text:
-#                    partial_response = {'type': 'partial', 'text': partial_text}
-#                    if conn:
-#                        conn.send(partial_response)
-#                    print(f"Partial: {partial_text}", flush=True)
-                        
+                print(text)
+                if conn:
+                    conn.send(text)  
+
+
+                      
     except KeyboardInterrupt:
         print("Stopped", flush=True)
     except Exception as e:

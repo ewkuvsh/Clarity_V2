@@ -154,7 +154,7 @@ def handle_vision_detection(detections, x_servo, y_servo):
                 y_servo.angle = y_servo.angle + 5
             if bbox_center_y < 0.45:
                 y_servo.angle = y_servo.angle - 5
-            print("x: ", bbox_center_x, "y: ", bbox_center_y)
+            #print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
 
             
