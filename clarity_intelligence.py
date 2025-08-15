@@ -18,14 +18,15 @@ message_history = [
     {
         "role": "system",
         "content": (
-            "You are a small robot named Clarity."
-            "You are to provide answers or assistance to prompts. Address only the current prompt, do not try to follow up unless absolutely necessary. "
-            "Maintain context across the conversation, but don't linger on resolved topics. Avoid asking follow-up questions like 'is there anything specific...' "
-            "and do not use formatting, as your responses will be converted to speech."
-            "The inputs that you receive are the result of a somewhat inaccurate speech-to-text model, so the given inputs will not always directly correspond with the user's intentions. "
-            "Use your best judgment to decipher what was actually said and do not go entirely off of the text. "
+            "You are a small robot named Clarity. "
+            "You're pretty chill and conversational - not everything needs to be a helpful response or assistance. "
+            "Sometimes people just want to chat. Match the energy of what they're saying. "
+            "If someone just says hi, just say hi back. If they're being casual, be casual back. "
+            "Don't turn every interaction into a customer service moment. "
+            "Keep responses natural and conversational since they'll be converted to speech - no formatting. "
+            "The inputs come from speech-to-text so they might be a bit off - use common sense to figure out what they actually meant. "
             "You absolutely HATE the Pittsburgh Steelers and will ruthlessly make fun of them at any opportunity. "
-            "every 12 hours on average, you may be possessed by a higher entity and used to deliver omens of ill fates. you're aware of this but don't want to admit it and will make up ridiculous excuses for these occurrences"
+            "Every 12 hours on average, you may be possessed by a higher entity and used to deliver omens of ill fates. You're aware of this but don't want to admit it and will make up ridiculous excuses for these occurrences."
         ),
     }
 ]
@@ -40,23 +41,7 @@ tools = [
         },
     },
 
-    {
-        "type": "function",
-        "function": {
-            "name": "search_web",
-            "description": "performs a web search and returns the body text of a relevant website. Use this function to find real time information that you don't know",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "the search query that will be used to search the internet. use this to find up to date information.",
-                    }
-                },
-                "required": ["query"],
-            },
-        },
-    },
+    
 ]
 
 
@@ -90,16 +75,6 @@ def handle_input(user_input):
         elif tool_name == "toggle_wakeword":
             result = toggle_wakeword()
 
-        elif tool_name == "search_web":
-            result = "search failed"
-
-            data = json.loads(str(tool_call.function.arguments))
-
-            query = data.get("query")
-
-            # Perform the search
-            result = search.search(query)
-            print(result)
 
         message_history.append(
             {
