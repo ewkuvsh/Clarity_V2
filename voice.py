@@ -37,7 +37,7 @@ def process_audio(conn=None):
         
     recognizer = vosk.KaldiRecognizer(model, 16000)
     # Enable more alternatives for better accuracy
-    recognizer.SetMaxAlternatives(3)
+    recognizer.SetMaxAlternatives(4)
 
     device_index = find_respeaker_device()
     print(f"Device: {device_index}", flush=True)
@@ -59,7 +59,7 @@ def process_audio(conn=None):
             data = stream.read(2048, exception_on_overflow=False)
             if recognizer.AcceptWaveform(data):
                 result = json.loads(recognizer.Result())
-                text = result.get('text', '').strip()
+                text = result['alternatives'][0].get('text', '').strip()
                 print(text)
                 if conn:
                     conn.send(text)  
