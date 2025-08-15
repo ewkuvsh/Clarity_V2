@@ -35,7 +35,7 @@ def main():
     # Start voice multiprocessing worker
     voice_proc = mp.Process(
         target=run_voice,
-        args=(voice_child_conn, is_speaking)
+        args=(is_speaking, voice_child_conn)
     )
     voice_proc.start()
 
@@ -62,9 +62,9 @@ def run_vision(conn):
     from vision import vision
     vision(conn)
 
-def run_voice(conn, is_speaking):
+def run_voice(is_speaking, conn):
     from voice import voice
-    voice(conn, is_speaking)
+    voice(is_speaking, conn)
 
     
 

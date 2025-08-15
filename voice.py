@@ -27,7 +27,7 @@ def find_respeaker_device():
     print(f"Using device {respeaker_index}", flush=True)
     return respeaker_index
 
-def process_audio(conn=None, is_speaking = None):
+def process_audio(is_speaking, conn=None):
     try:
         model = vosk.Model("/home/evan/Clarity_V2/vosk-model-small-en-us-0.15")
         print("Model loaded", flush=True)
@@ -56,7 +56,7 @@ def process_audio(conn=None, is_speaking = None):
         print("Listening...", flush=True)
         
         while True:
-            if is_speaking.value == True:
+            if is_speaking.value == False:
                 data = stream.read(2048, exception_on_overflow=False)
                 if recognizer.AcceptWaveform(data):
                     result = json.loads(recognizer.Result())
@@ -82,9 +82,9 @@ def process_audio(conn=None, is_speaking = None):
             stream.close()
         p.terminate()
 
-def voice(conn, is_speaking = None):
+def voice(is_speaking, conn):
     """Voice processing wrapper"""
-    process_audio(conn, is_speaking = None)
+    process_audio(is_speaking, conn)
 
 
 if __name__ == "__main__":
