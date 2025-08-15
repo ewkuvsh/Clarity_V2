@@ -62,9 +62,9 @@ def run_vision(conn):
     from vision import vision
     vision(conn)
 
-def run_voice(conn):
+def run_voice(conn, is_speaking):
     from voice import voice
-    voice(conn)
+    voice(conn, is_speaking)
 
     
 
