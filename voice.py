@@ -3,6 +3,7 @@ import pyaudio
 import json
 import vosk
 import sys
+import multiprocessing as mp
 
 def find_respeaker_device():
     """Finds the respeaker"""
@@ -89,4 +90,4 @@ def voice(is_speaking, conn):
 
 if __name__ == "__main__":
     # Direct execution - just print results
-    process_audio()
+    process_audio(is_speaking = mp.Value('b', False))
