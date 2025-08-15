@@ -48,9 +48,9 @@ def main():
 
 
             if conn == voice_parent_conn:
-                is_speaking.value = False
-                subprocess.run(f'espeak "{data}" --stdout | aplay -D softvol', shell=True)
                 is_speaking.value = True
+                subprocess.run(f'espeak "{data}" --stdout | aplay -D softvol', shell=True)
+                is_speaking.value = False
   
 
 
