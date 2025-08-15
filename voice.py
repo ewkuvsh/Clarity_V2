@@ -62,7 +62,7 @@ def process_audio(conn=None, is_speaking = None):
                     result = json.loads(recognizer.Result())
                     text = result['alternatives'][0].get('text', '').strip()
                     print(text)
-                    if conn:
+                    if conn and text != None:
                         conn.send(text)
             else:
                 _ = stream.read(4000, exception_on_overflow=False)  # Discard input during silent period to stop clarity from hearing itself
@@ -86,9 +86,6 @@ def voice(conn, is_speaking = None):
     """Voice processing wrapper"""
     process_audio(conn, is_speaking = None)
 
-def worker_function(conn, is_speaking = None):
-    """Worker function for multiprocessing"""
-    voice(conn, is_speaking = None)
 
 if __name__ == "__main__":
     # Direct execution - just print results

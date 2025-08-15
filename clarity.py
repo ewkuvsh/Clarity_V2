@@ -47,7 +47,7 @@ def main():
             data = conn.recv()
 
 
-            if conn == vision_parent_conn:
+            if conn == voice_parent_conn:
                 is_speaking.value = False
                 subprocess.run(f'espeak "{data}" --stdout | aplay -D softvol', shell=True)
                 is_speaking.value = True
