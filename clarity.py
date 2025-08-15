@@ -10,6 +10,7 @@ import busio
 from adafruit_pca9685 import PCA9685
 from adafruit_motor import servo
 import hailo
+import subprocess
 
 
 
@@ -22,18 +23,19 @@ def main():
 
     # Create pipe for voice worker
     voice_parent_conn, voice_child_conn = mp.Pipe()
+    is_speaking = mp.Value('b', False)
 
     # Start vision multiprocessing worker
     vision_proc = mp.Process(
-        target=run_vision_worker,
+        target=run_vision,
         args=(vision_child_conn,)
     )
     vision_proc.start()
 
     # Start voice multiprocessing worker
     voice_proc = mp.Process(
-        target=run_voice_worker,
-        args=(voice_child_conn,)
+        target=run_voice,
+        args=(voice_child_conn, is_speaking)
     )
     voice_proc.start()
 
@@ -42,27 +44,29 @@ def main():
     while vision_proc.is_alive() and voice_proc.is_alive() or True:
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
-            print(conn.recv())
+            data = conn.recv()
+
+
+            if conn == vision_parent_conn:
+                is_speaking.value = False
+                subprocess.run(f'espeak "{data}" --stdout | aplay -D softvol', shell=True)
+                is_speaking.value = True
+  
 
 
 
-    # Cleanup
-    if vision_proc and vision_proc.is_alive():
-        vision_proc.terminate()
-        vision_proc.join()
 
-    if voice_proc and voice_proc.is_alive():
-        voice_proc.terminate()
-        voice_proc.join()
 
-def run_vision_worker(conn):
+
+def run_vision(conn):
     from vision import vision
     vision(conn)
 
-def run_voice_worker(conn):
+def run_voice(conn):
     from voice import voice
     voice(conn)
 
+    
 
 
             

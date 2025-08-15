@@ -27,7 +27,7 @@ def find_respeaker_device():
     print(f"Using device {respeaker_index}", flush=True)
     return respeaker_index
 
-def process_audio(conn=None):
+def process_audio(conn=None, is_speaking = None):
     try:
         model = vosk.Model("/home/evan/Clarity_V2/vosk-model-small-en-us-0.15")
         print("Model loaded", flush=True)
@@ -56,13 +56,17 @@ def process_audio(conn=None):
         print("Listening...", flush=True)
         
         while True:
-            data = stream.read(2048, exception_on_overflow=False)
-            if recognizer.AcceptWaveform(data):
-                result = json.loads(recognizer.Result())
-                text = result['alternatives'][0].get('text', '').strip()
-                print(text)
-                if conn:
-                    conn.send(text)  
+            if is_speaking.value == True:
+                data = stream.read(2048, exception_on_overflow=False)
+                if recognizer.AcceptWaveform(data):
+                    result = json.loads(recognizer.Result())
+                    text = result['alternatives'][0].get('text', '').strip()
+                    print(text)
+                    if conn:
+                        conn.send(text)
+            else:
+                _ = stream.read(4000, exception_on_overflow=False)  # Discard input during silent period to stop clarity from hearing itself
+
 
 
                       
@@ -78,13 +82,13 @@ def process_audio(conn=None):
             stream.close()
         p.terminate()
 
-def voice(conn):
+def voice(conn, is_speaking = None):
     """Voice processing wrapper"""
-    process_audio(conn)
+    process_audio(conn, is_speaking = None)
 
-def worker_function(conn):
+def worker_function(conn, is_speaking = None):
     """Worker function for multiprocessing"""
-    voice(conn)
+    voice(conn, is_speaking = None)
 
 if __name__ == "__main__":
     # Direct execution - just print results
