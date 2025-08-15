@@ -11,6 +11,7 @@ from adafruit_pca9685 import PCA9685
 from adafruit_motor import servo
 import hailo
 import subprocess
+from clarity_intelligence import handle_input
 
 
 
@@ -49,7 +50,7 @@ def main():
 
             if conn == voice_parent_conn:
                 is_speaking.value = True
-                subprocess.run(f'espeak "{data}" --stdout | aplay -D softvol', shell=True)
+                subprocess.run(f'espeak "{handle_input(data)}" --stdout | aplay -D softvol', shell=True)
                 is_speaking.value = False
   
 
