@@ -97,7 +97,7 @@ def worker_function(conn_incoming):
 
 
     original_argv = sys.argv.copy()
-    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '30']
+    sys.argv = ['worker_process', '--input', 'rpi', '--frame-rate', '25']
     user_data = user_app_callback_class()
     user_data.y_servo = servo.Servo(pca.channels[14])
     user_data.x_servo = servo.Servo(pca.channels[15])
@@ -150,7 +150,10 @@ def handle_vision_detection(detections, x_servo, y_servo):
                 x_servo.angle = x_servo.angle - 5
             if bbox_center_x < 0.47:
                 x_servo.angle = x_servo.angle + 5
-
+            if bbox_center_y > 0.4:
+                y_servo.angle = y_servo.angle + 5
+            if bbox_center_y < 0.45:
+                y_servo.angle = y_servo.angle - 5
             print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
 

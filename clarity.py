@@ -35,7 +35,7 @@ def main():
         target=run_voice_worker,
         args=(voice_child_conn,)
     )
-#    voice_proc.start()
+    voice_proc.start()
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
