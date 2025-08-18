@@ -19,7 +19,7 @@ import time
 def main():
 
     bus = smbus2.SMBus(1)
-    change_color(bus, 'g')
+    change_color(bus, 'w')
 
 
     # Create pipe for vision worker
@@ -45,16 +45,20 @@ def main():
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
 
-    while vision_proc.is_alive() and voice_proc.is_alive() or True:
+    while vision_proc.is_alive() and voice_proc.is_alive():
         ready_conns = wait(parent_conns)
         for conn in ready_conns:
             data = conn.recv()
 
 
             if conn == voice_parent_conn:
+                change_color(bus, 'g')
                 is_speaking.value = True
                 subprocess.run(f'espeak "{handle_input(data)}" --stdout | aplay -D softvol', shell=True)
                 is_speaking.value = False
+                change_color(bus, 'w')
+
+    change_color(bus, 'r')
   
 
 
