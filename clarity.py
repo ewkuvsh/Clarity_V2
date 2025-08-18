@@ -19,7 +19,7 @@ import time
 def main():
 
     bus = smbus2.SMBus(1)
-    change_color(bus, 1)
+    change_color(bus, 'g')
 
 
     # Create pipe for vision worker
@@ -72,7 +72,7 @@ def run_voice(is_speaking, conn):
 
 def change_color(bus, value):
     device_address = 0x28
-    bus.write_byte(device_address, value)
+    bus.write_byte(device_address, ord(value))
 
 
 
