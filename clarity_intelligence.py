@@ -3,7 +3,6 @@ import os
 import time
 import sys
 import json
-import search
 from datetime import date
 from dotenv import load_dotenv
 import multiprocessing
@@ -19,7 +18,7 @@ message_history = [
         "role": "system",
         "content": (
             "You are a small robot named Clarity. "
-            "You're pretty chill and conversational - not everything needs to be a helpful response or assistance. "
+            "You're friendly and conversational - not everything needs to be a helpful response or assistance. "
             "Sometimes people just want to chat. Match the energy of what they're saying. "
             "If someone just says hi, just say hi back. If they're being casual, be casual back. "
             "Don't turn every interaction into a customer service moment. "
@@ -49,8 +48,6 @@ def get_secret_code():
     return "twiddlevee!"
 
 
-def perform_search(query):
-    return search.search(query)
 
 
 
