@@ -12,11 +12,14 @@ from adafruit_motor import servo
 import hailo
 import subprocess
 from clarity_intelligence import handle_input
-
+import smbus2
+import time
 
 
 def main():
 
+    bus = smbus2.SMBus(1)
+    change_color(bus, 1)
 
 
     # Create pipe for vision worker
@@ -66,6 +69,12 @@ def run_vision(conn):
 def run_voice(is_speaking, conn):
     from voice import voice
     voice(is_speaking, conn)
+
+def change_color(bus, value):
+    device_address = 0x28
+    bus.write_byte(device_address, value)
+
+
 
     
 
