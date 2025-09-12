@@ -64,7 +64,7 @@ def app_callback(pad, info, user_data):
         label = detection.get_label()
         bbox = detection.get_bbox()
         confidence = detection.get_confidence()
-        if label == "person":
+        if label == "person" or "cat":
             track_id = 0
             track = detection.get_objects_typed(hailo.HAILO_UNIQUE_ID)
             if len(track) == 1:
@@ -146,20 +146,20 @@ def handle_vision_detection(detections, x_servo, y_servo):
             bbox_center_x = (bbox.xmin() + bbox.xmax()) / 2.0
             bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0 
 
-            
-            if bbox_center_x > 0.63:
-                x_servo.angle = x_servo.angle - 10
-            elif bbox_center_x > 0.53:
-                x_servo.angle = x_servo.angle - 5
+            print("x: ", bbox_center_x, " y: ", bbox_center_y) 
+#            if bbox_center_x > 0.63:
+#                x_servo.angle = x_servo.angle - 10
+            if bbox_center_x > 0.57:
+                x_servo.angle = x_servo.angle - 3
 
 
 
             if bbox_center_x < 0.47:
-                x_servo.angle = x_servo.angle + 5
+                x_servo.angle = x_servo.angle + 3
             if bbox_center_y > 0.4:
-                y_servo.angle = y_servo.angle + 5
+                y_servo.angle = y_servo.angle + 3
             if bbox_center_y < 0.45:
-                y_servo.angle = y_servo.angle - 5
+                y_servo.angle = y_servo.angle - 3
             #print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
 
