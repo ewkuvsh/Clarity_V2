@@ -147,13 +147,10 @@ def handle_vision_detection(detections, x_servo, y_servo):
             bbox_center_y = (bbox.ymin() + bbox.ymax()) / 2.0 
 
             print("x: ", bbox_center_x, " y: ", bbox_center_y) 
-#            if bbox_center_x > 0.63:
-#                x_servo.angle = x_servo.angle - 10
+
+
             if bbox_center_x > 0.57:
                 x_servo.angle = x_servo.angle - 3
-
-
-
             if bbox_center_x < 0.47:
                 x_servo.angle = x_servo.angle + 3
             if bbox_center_y > 0.4:
@@ -161,6 +158,9 @@ def handle_vision_detection(detections, x_servo, y_servo):
             if bbox_center_y < 0.45:
                 y_servo.angle = y_servo.angle - 3
             #print("x: ", bbox_center_x, "y: ", bbox_center_y)
+
+def move_servos(bbox, x_servo, y_servo):
+	return 2
 
 
             

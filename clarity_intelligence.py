@@ -93,4 +93,3 @@ def handle_input(user_input):
         return result
     return response_message.content
 
-
