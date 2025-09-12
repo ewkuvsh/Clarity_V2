@@ -149,6 +149,11 @@ def handle_vision_detection(detections, x_servo, y_servo):
             print("x: ", bbox_center_x, " y: ", bbox_center_y) 
 
 
+            move_servo(x_servo, bbox_center_x, 3)
+            move_servo(y_servo, bbox_center_y, 3)
+
+            
+            
             if bbox_center_x > 0.57:
                 x_servo.angle = x_servo.angle - 3
             if bbox_center_x < 0.47:
@@ -157,10 +162,26 @@ def handle_vision_detection(detections, x_servo, y_servo):
                 y_servo.angle = y_servo.angle + 3
             if bbox_center_y < 0.45:
                 y_servo.angle = y_servo.angle - 3
-            #print("x: ", bbox_center_x, "y: ", bbox_center_y)
 
-def move_servos(bbox, x_servo, y_servo):
-	return 2
+def move_servo(servo, detection_center, step_angle):
+
+    next_angle = servo.angle
+    if detection_center > 0.47:
+        servo.angle = servo.angle + step_angle if servo.angle + step_angle < 180 else servo.angle
+        #why do we not have switch cases? do you just hate your branch predictor or something? 
+
+    elif detection_center < 0.57:
+        servo.angle - step_angle if servo.angle - step_angle > 0 else servo.angle
+
+
+        
+        
+    
+        
+        
+    
+    
+	
 
 
             

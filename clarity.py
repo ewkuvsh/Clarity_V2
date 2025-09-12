@@ -22,25 +22,24 @@ def main():
     change_color(bus, 'w')
 
 
-    # Create pipe for vision worker
     vision_parent_conn, vision_child_conn = mp.Pipe()
 
-    # Create pipe for voice worker
     voice_parent_conn, voice_child_conn = mp.Pipe()
+
     is_speaking = mp.Value('b', False)
 
-    # Start vision multiprocessing worker
+
     vision_proc = mp.Process(
         target=run_vision,
         args=(vision_child_conn,)
     )
-    vision_proc.start()
 
-    # Start voice multiprocessing worker
     voice_proc = mp.Process(
         target=run_voice,
         args=(is_speaking, voice_child_conn)
     )
+
+    vision_proc.start()
     voice_proc.start()
 
     parent_conns = [voice_parent_conn, vision_parent_conn]
@@ -75,16 +74,9 @@ def run_voice(is_speaking, conn):
     voice(is_speaking, conn)
 
 def change_color(bus, value):
+    #value is a lowercase character which is the first letter of the desired color
     device_address = 0x28
     bus.write_byte(device_address, ord(value))
-
-
-
-    
-
-
-            
-
 
 if __name__ == "__main__":
     main()
