@@ -18,6 +18,7 @@ import time
 
 def main():
 
+    last_seen = time.time()
     bus = smbus2.SMBus(1)
     change_color(bus, 'w')
 
@@ -56,6 +57,14 @@ def main():
                 subprocess.run(f'espeak "{handle_input(data)}" --stdout | aplay -D softvol', shell=True)
                 is_speaking.value = False
                 change_color(bus, 'w')
+
+            if conn == vision_parent_conn:
+                if time.time()  > last_seen + 25200:
+                    subprocess.run(f'espeak hello again --stdout | aplay -D softvol', shell=True)
+
+                last_seen = time.time()
+                    
+                    
 
     change_color(bus, 'r')
   
