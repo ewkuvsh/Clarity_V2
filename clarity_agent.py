@@ -406,7 +406,7 @@ async def spontaneous_behavior(is_speaking, bus, message_history):
                 except Exception as e:
                     print(f"Error in spontaneous sweep: {e}")
         
-        elif roll < 0.32:  # 2% chance - spontaneous comment
+        elif roll < 0.325:  # 2% chance - spontaneous comment
             from datetime import datetime
             current_hour = datetime.now().hour
             if current_hour < 7 or current_hour >= 23:
@@ -467,7 +467,7 @@ async def spontaneous_behavior(is_speaking, bus, message_history):
             except Exception as e:
                 print(f"Error in spontaneous behavior: {e}")
         
-        elif roll < 0.322:  # 0.2% chance - omen (very rare, roughly every few hours)
+        elif roll < 0.324:  # 0.2% chance - omen (very rare, roughly every few hours)
             prompt = "You feel a strange presence taking control. Deliver a cryptic omen about future events."
             change_color(bus, 'b')  # Blue for omen mode
             
