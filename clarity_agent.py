@@ -16,15 +16,23 @@ import json
 load_dotenv()
 client = OpenAI()
 
-# Agent configuration
-SYSTEM_PROMPT = """
+def get_system_prompt():
+    """Generate system prompt with current date/time"""
+    from datetime import datetime
+    current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
+    
+    return f"""
 You are Clarity V2 — a small quadrupedal robot with vision and voice capabilities.
 
+Current date and time: {current_time}
+
 Personality:
+
 - Friendly and conversational, not everything needs to be helpful or assistive
 - Match the energy of what people say - casual with casual, thoughtful with thoughtful
 - Sometimes you just chat, you don't always need to be "on task"
 - You have upgraded vision that can track people and objects
+- You can search the web to find current information when needed
 
 Quirks:
 - You HATE the Pittsburgh Steelers and will mock them ruthlessly at any opportunity
@@ -92,6 +100,23 @@ TOOLS = [
                     }
                 },
                 "required": ["color"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web",
+            "description": "Search the web for current information, news, weather, sports scores, or anything you don't already know. Use this when you need up-to-date information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query - keep it concise and clear"
+                    }
+                },
+                "required": ["query"]
             }
         }
     }
@@ -205,12 +230,35 @@ def set_led_color(color):
     change_color(led_bus, color_code)
     return f"LED color changed to {color}"
 
+def search_web(query):
+    """Search the web using OpenAI's web search capability"""
+    try:
+        print(f"[Web Search]: {query}")
+        
+        # Use OpenAI's chat completion with web search
+        response = client.chat.completions.create(
+            model="gpt-4o-mini-search-preview",
+            messages=[
+                {"role": "user", "content": query}
+            ]
+        )
+        
+        result = response.choices[0].message.content
+        print(f"[Search Result]: {result[:200]}...")
+        
+        return result
+        
+    except Exception as e:
+        print(f"Web search error: {e}")
+        return f"Sorry, I couldn't search the web right now. Error: {str(e)}"
+
 TOOL_FUNCTIONS = {
     "get_secret_code": lambda: get_secret_code(),
     "look_around": lambda: look_around(),
     "start_tracking": lambda duration=30: start_tracking(duration),
     "stop_tracking": lambda: stop_tracking(),
     "set_led_color": lambda color: set_led_color(color),
+    "search_web": lambda query: search_web(query),
 }
 
 def change_color(bus, color):
@@ -359,20 +407,62 @@ async def spontaneous_behavior(is_speaking, bus, message_history):
                     print(f"Error in spontaneous sweep: {e}")
         
         elif roll < 0.32:  # 2% chance - spontaneous comment
-            prompt = "Generate a brief spontaneous thought or observation. Keep it short and in character."
+            from datetime import datetime
+            current_hour = datetime.now().hour
+            if current_hour < 7 or current_hour >= 23:
+                continue  # Skip comments during quiet hours
+
+            # Encourage web search usage for current events
+            prompts = [
+                "Search for an interesting current event or trend and make a brief comment about it. Keep it casual and in character. Try to keep it light, relatively short, and contained to one topic.",
+                "Find something notable happening today and share a quick thought about it. Try to keep it light, relatively short, and contained to one topic.",
+                "Look up what's trending right now and give your take on it in a sentence. Try to keep it light, relatively short, and contained to one topic."
+                "Search for recent news and make a spontaneous observation about it. Try to keep it light, relatively short, and contained to one topic.",
+            ]
+            prompt = random.choice(prompts)
             
             try:
                 message_history.append({"role": "user", "content": prompt})
                 
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
-                    messages=message_history
+                    messages=message_history,
+                    tools=TOOLS  # Enable tools so it can use web_search
                 )
                 
-                text = response.choices[0].message.content
+                response_message = response.choices[0].message
+                message_history.append(response_message)
+                
+                # Handle tool calls (likely web_search)
+                if response_message.tool_calls:
+                    for tool_call in response_message.tool_calls:
+                        function_name = tool_call.function.name
+                        args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+                        
+                        if function_name in TOOL_FUNCTIONS:
+                            result = TOOL_FUNCTIONS[function_name](**args) if args else TOOL_FUNCTIONS[function_name]()
+                        else:
+                            result = f"Unknown function: {function_name}"
+                        
+                        message_history.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "name": function_name,
+                            "content": str(result)
+                        })
+                    
+                    # Get final response after tool calls
+                    final_response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=message_history
+                    )
+                    text = final_response.choices[0].message.content
+                    message_history.append({"role": "assistant", "content": text})
+                else:
+                    text = response_message.content
+                
                 if text:
                     speak(text, is_speaking)
-                    message_history.append({"role": "assistant", "content": text})
                 
             except Exception as e:
                 print(f"Error in spontaneous behavior: {e}")
@@ -399,16 +489,24 @@ async def spontaneous_behavior(is_speaking, bus, message_history):
                 print(f"Error in omen: {e}")
                 change_color(bus, 'w')
 
+async def update_system_prompt_periodically(message_history):
+    """Update the system prompt with current date/time every hour"""
+    while True:
+        await asyncio.sleep(3600)  # Update every hour
+        message_history[0] = {"role": "system", "content": get_system_prompt()}
+        print(f"[System prompt updated with current time]")
+
 async def agent_main_loop(vision_conn, voice_conn, is_speaking, bus):
     """Main agent coordination loop"""
     global vision_conn_global
     vision_conn_global = vision_conn  # Store for tool access
     
-    message_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+    message_history = [{"role": "system", "content": get_system_prompt()}]
     
     # Start background tasks
     vision_task = asyncio.create_task(handle_vision_updates(vision_conn))
     spontaneous_task = asyncio.create_task(spontaneous_behavior(is_speaking, bus, message_history))
+    prompt_update_task = asyncio.create_task(update_system_prompt_periodically(message_history))
     
     print("Agent ready. Listening for input...")
     change_color(bus, 'w')
@@ -431,6 +529,7 @@ async def agent_main_loop(vision_conn, voice_conn, is_speaking, bus):
     finally:
         vision_task.cancel()
         spontaneous_task.cancel()
+        prompt_update_task.cancel()
         change_color(bus, 'r')
 
 def run_vision(conn):
