@@ -63,7 +63,7 @@ def process_audio(is_speaking, conn=None):
                     result = json.loads(recognizer.Result())
                     text = result['alternatives'][0].get('text', '').strip()
                     print(text)
-                    if conn and text != "":
+                    if conn and text != "" and "clarity" in text:
                         conn.send(text)
             else:
                 _ = stream.read(4000, exception_on_overflow=False)  # Discard input during silent period to stop clarity from hearing itself
